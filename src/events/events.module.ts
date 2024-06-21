@@ -8,6 +8,6 @@ import { Attendee } from './attendee.entity';
   imports: [
     TypeOrmModule.forFeature([Event, Attendee])
   ],
-  controllers: [EventsController]
+  controllers: [EventsController],
 })
 export class EventsModule {}

@@ -4,7 +4,8 @@ import {
   Delete,
   Get,
   HttpCode,
-  Logger, NotFoundException,
+  Logger,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
@@ -16,14 +17,17 @@ import { UpdateEventDto } from './update-event.dto';
 import { Event } from './event.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Attendee } from './attendee.entity';
 
 @Controller('/events')
 export class EventsController {
   private readonly logger = new Logger(EventsController.name);
-  
+
   constructor(
     @InjectRepository(Event)
     private readonly repository: Repository<Event>,
+    @InjectRepository(Attendee)
+    private readonly attendeeRepository: Repository<Attendee>,
   ) {}
 
   @Get()
@@ -34,15 +38,30 @@ export class EventsController {
     return events;
   }
 
+  @Get('practice2')
+  async practice2() {
+    // return await this.repository.findOne({ where: { id: 1 } });
+    const event = await this.repository.findOne({ where: { id: 1 } });
+    
+    const attendee = new Attendee();
+    
+    attendee.name = 'Jerry';
+    attendee.event = event;
+    
+    await this.attendeeRepository.save(attendee);
+    
+    return event;
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     // console.log(typeof id);
     const event = await this.repository.findOne({ where: { id } });
-    
+
     if (!event) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
-    
+
     return event;
   }
 
@@ -57,7 +76,7 @@ export class EventsController {
   @Patch(':id')
   async update(@Param('id') id, @Body() input: UpdateEventDto) {
     const event = await this.repository.findOne(id);
-    
+
     if (!event) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
@@ -73,7 +92,7 @@ export class EventsController {
   @HttpCode(204)
   async remove(@Param('id') id) {
     const event = await this.repository.findOne(id);
-    
+
     if (!event) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
