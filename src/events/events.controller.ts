@@ -18,6 +18,7 @@ import { Event } from './event.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Attendee } from './attendee.entity';
+import { EventService } from './event.service';
 
 @Controller('/events')
 export class EventsController {
@@ -28,6 +29,8 @@ export class EventsController {
     private readonly repository: Repository<Event>,
     @InjectRepository(Attendee)
     private readonly attendeeRepository: Repository<Attendee>,
+    // Borrar las injecciones de dependencias de arriba
+    private readonly eventsService: EventService,
   ) {}
 
   @Get()
@@ -56,8 +59,9 @@ export class EventsController {
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     // console.log(typeof id);
-    const event = await this.repository.findOne({ where: { id } });
-
+    // const event = await this.repository.findOne({ where: { id } });
+    const event = await this.eventsService.getEvent(id);
+    
     if (!event) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
