@@ -1,6 +1,7 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Injectable, Logger } from '@nestjs/common';
+import { AttendeeAnswerEnum } from './event.entity';
 
 @Injectable()
 export class EventService {
@@ -12,12 +13,28 @@ export class EventService {
   ) {}
 
   public async getEvent(id: number): Promise<Event | undefined> {
-    const query = this.getEventsBaseQuery()
+    const query = this.getEventsWithAttendeeCountQuery()
       .andWhere('event.id = :id', { id });
 
     this.logger.debug(query.getSql());
 
     return await query.getOne();
+  }
+
+  public getEventsWithAttendeeCountQuery() {
+    return this.getEventsBaseQuery()
+      .loadRelationCountAndMap(
+      'event.attendeeCount',
+      'event.attendees',
+      )
+      .loadRelationCountAndMap(
+        'event.attendeeAccepted',
+        'event.attendees',
+        'attendee',
+        (qb) =>
+          qb.where('attendee.answer = :answer', {
+            answer: AttendeeAnswerEnum.Accepted,
+        }))
   }
 
   private getEventsBaseQuery() {
