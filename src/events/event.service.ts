@@ -1,5 +1,5 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 import { Injectable, Logger } from '@nestjs/common';
 import { AttendeeAnswerEnum } from './attendee.entity';
 import { ListEvents, WhenEventFilter } from './input/list.events';
@@ -107,6 +107,14 @@ export class EventService {
             answer: AttendeeAnswerEnum.Rejected,
           }),
       );
+  }
+
+  public async deleteEvent(id: number): Promise<DeleteResult> {
+    return await this.eventsRepository
+      .createQueryBuilder('event')
+      .delete()
+      .where('event.id = :id', { id })
+      .execute();
   }
 
   private getEventsBaseQuery() {
