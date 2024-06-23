@@ -9,8 +9,10 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post, Query,
-  ValidationPipe
+  Post,
+  Query,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CreateEventDto } from './input/create-event.dto';
 import { UpdateEventDto } from './input/update-event.dto';
@@ -35,12 +37,16 @@ export class EventsController {
   ) {}
 
   @Get()
+  @UsePipes(new ValidationPipe({ transform: true }))
   async findAll(@Query() filter: ListEvents) {
-    this.logger.log('Hit the findAll route');
-    const events = await this.eventsService
-      .getEventsWithAttendeeCountFiltered(filter);
-    this.logger.debug(`Found ${events.length} events`);
-    return events;
+    return await this.eventsService.getEventsWithAttendeeCountFilteredPaginated(
+      filter,
+      {
+        total: true,
+        currentPage: filter.page,
+        limit: 2,
+      },
+    );
   }
 
   @Get('practice2')
@@ -52,9 +58,9 @@ export class EventsController {
 
     attendee.name = 'Jerry';
     attendee.event = event;
-    
+
     await this.attendeeRepository.save(attendee);
-    
+
     return event;
   }
 
@@ -63,7 +69,7 @@ export class EventsController {
     // console.log(typeof id);
     // const event = await this.repository.findOne({ where: { id } });
     const event = await this.eventsService.getEvent(id);
-    
+
     if (!event) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
