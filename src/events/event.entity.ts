@@ -4,14 +4,14 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Attendee } from './attendee.entity';
 import { User } from '../auth/user.entity';
 
 @Entity()
 export class Event {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn()
   id: number;
 
   @Column()

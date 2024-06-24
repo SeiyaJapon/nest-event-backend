@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   Logger,
@@ -10,9 +11,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query, UseGuards,
+  Query,
+  UseGuards,
   UsePipes,
-  ValidationPipe
+  ValidationPipe,
 } from '@nestjs/common';
 import { CreateEventDto } from './input/create-event.dto';
 import { UpdateEventDto } from './input/update-event.dto';
@@ -31,14 +33,7 @@ import { AuthGuardJwt } from '../auth/auth-guard.jwt';
 export class EventsController {
   private readonly logger = new Logger(EventsController.name);
 
-  constructor(
-    @InjectRepository(Event)
-    private readonly repository: Repository<Event>,
-    @InjectRepository(Attendee)
-    private readonly attendeeRepository: Repository<Attendee>,
-    // Borrar las injecciones de dependencias de arriba
-    private readonly eventsService: EventService,
-  ) {}
+  constructor(private readonly eventsService: EventService) {}
 
   @Get()
   @UsePipes(new ValidationPipe({ transform: true }))
@@ -53,20 +48,20 @@ export class EventsController {
     );
   }
 
-  @Get('practice2')
-  async practice2() {
-    // return await this.repository.findOne({ where: { id: 1 } });
-    const event = await this.repository.findOne({ where: { id: 1 } });
-
-    const attendee = new Attendee();
-
-    attendee.name = 'Jerry';
-    attendee.event = event;
-
-    await this.attendeeRepository.save(attendee);
-
-    return event;
-  }
+  // @Get('practice2')
+  // async practice2() {
+  //   // return await this.repository.findOne({ where: { id: 1 } });
+  //   const event = await this.repository.findOne({ where: { id: 1 } });
+  //
+  //   const attendee = new Attendee();
+  //
+  //   attendee.name = 'Jerry';
+  //   attendee.event = event;
+  //
+  //   await this.attendeeRepository.save(attendee);
+  //
+  //   return event;
+  // }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
@@ -83,37 +78,50 @@ export class EventsController {
 
   @Post()
   @UseGuards(AuthGuardJwt)
-  async create(
-    @Body() input: CreateEventDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() input: CreateEventDto, @CurrentUser() user: User) {
     return await this.eventsService.createEvent(input, user);
   }
 
   @Patch(':id')
-  async update(@Param('id') id, @Body() input: UpdateEventDto) {
-    const event = await this.repository.findOne(id);
+  @UseGuards(AuthGuardJwt)
+  async update(
+    @Param('id') id,
+    @Body() input: UpdateEventDto,
+    @CurrentUser() user: User,
+  ) {
+    const event = await this.eventsService.getEvent(id);
 
     if (!event) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
 
-    return await this.repository.save({
-      ...event,
-      ...input,
-      when: input.when ? new Date(input.when) : event.when,
-    });
+    if (event.organizerId !== user.id) {
+      throw new ForbiddenException('You are not the organizer of this event');
+    }
+
+    return await this.eventsService.updateEvent(event, input);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuardJwt)
   @HttpCode(204)
-  async remove(@Param('id') id) {
+  async remove(@Param('id') id, @CurrentUser() user: User) {
+    const event = await this.eventsService.getEvent(id);
+
+    if (!event) {
+      throw new NotFoundException(`Event with id ${id} not found`);
+    }
+
+    if (event.organizerId !== user.id) {
+      throw new ForbiddenException('You are not the organizer of this event');
+    }
+
     const result = await this.eventsService.deleteEvent(id);
-    
+
     if (result?.affected === 0) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
-    
+
     return result;
   }
 }
