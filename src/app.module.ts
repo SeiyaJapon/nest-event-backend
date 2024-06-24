@@ -10,6 +10,7 @@ import { ConfigModule } from '@nestjs/config';
 import ormConfig from './config/orm.config';
 import ormConfigProd from './config/orm.config.prod';
 import { SchoolModule } from './school/school.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SchoolModule } from './school/school.module';
         ormConfig :
         ormConfigProd,
     }),
+    AuthModule,
     EventsModule,
     SchoolModule
   ],

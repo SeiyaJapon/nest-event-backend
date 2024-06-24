@@ -4,6 +4,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AttendeeAnswerEnum } from './attendee.entity';
 import { ListEvents, WhenEventFilter } from './input/list.events';
 import { paginate, PaginateOptions } from '../pagination/paginator';
+import { CreateEventDto } from './input/create-event.dto';
+import { User } from '../auth/user.entity';
+import { Event } from './event.entity';
 
 @Injectable()
 export class EventService {
@@ -52,17 +55,17 @@ export class EventService {
         );
       }
     }
-    
+
     return query;
   }
-  
+
   public async getEventsWithAttendeeCountFilteredPaginated(
     filter: ListEvents,
     paginateOptions: PaginateOptions,
   ) {
     return await paginate(
       await this.getEventsWithAttendeeCountFiltered(filter),
-      paginateOptions
+      paginateOptions,
     );
   }
 
@@ -77,6 +80,14 @@ export class EventService {
     return await query.getOne();
   }
 
+  public async createEvent(input: CreateEventDto, user: User): Promise<Event> {
+    return await this.eventsRepository.save({
+      ...input,
+      organizer: user,
+      when: new Date(input.when),
+    });
+  }
+  
   public getEventsWithAttendeeCountQuery() {
     return this.getEventsBaseQuery()
       .loadRelationCountAndMap('event.attendeeCount', 'event.attendees')
